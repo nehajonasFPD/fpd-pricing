@@ -269,9 +269,9 @@ export default function Dashboard() {
     setFN(prev => ({ ...prev, [key]: file.name }))
     try {
       if (key === 'bible') {
-        setCsvData(prev => ({ ...prev, eta: await productBibleToEtaCSV(file) }))
+        const _eta = await productBibleToEtaCSV(file); setCsvData(prev => ({ ...prev, eta: _eta }))
       } else {
-        setCsvData(prev => ({ ...prev, [key]: await fileToCSV(file) }))
+        const _csv = await fileToCSV(file); setCsvData(prev => ({ ...prev, [key]: _csv }))
       }
     } catch(e) { setError(`Could not read ${file.name}`) }
   }
