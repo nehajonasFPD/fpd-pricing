@@ -51,8 +51,12 @@ Respond ONLY with a valid JSON array. No markdown, no backticks, no preamble. Sc
 
     const data = await response.json()
     const raw = data.content?.find(b => b.type === 'text')?.text || '[]'
-    const results = JSON.parse(raw.replace(/```json|```/g, '').trim())
-
+    console.log('Claude raw (500):', raw.substring(0, 500))
+    const jsonMatch = raw.match(/\[[\s\S]*\]/)
+    const jsonStr = jsonMatch ? jsonMatch[0] : raw.replace(/```json|```/g, '').trim()
+    let results = []
+    try { results = JSON.parse(jsonStr) }
+    catch(e) { console.error('Parse fail:', e.message, jsonStr.substring(0,200)); return NextResponse.json({ error: 'Parse failed', raw: raw.substring(0,300) }, { status:500 }) }
     return NextResponse.json({ results })
   } catch (err) {
     console.error(err)
