@@ -4,6 +4,7 @@ export async function POST(request) {
   try {
     const { looker, sellerboard, stockEta, manual } = await request.json()
 
+    console.log('Received data lengths - looker:', looker?.length || 0, 'sellerboard:', sellerboard?.length || 0)
     if (!looker && !sellerboard) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 })
     }

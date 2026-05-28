@@ -1,7 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import * as XLSX from 'xlsx'
 
 const GREEN  = '#4ADE80'
 const BORDER = '#1E2240'
@@ -41,35 +40,13 @@ function Cell({ val, lo, hi, fmt }) {
   return <span style={{ color, fontWeight:(n < lo || n > hi) ? 500 : 400 }}>{fmt(n)}</span>
 }
 
-async function fileToCSV(file) {
-  const ext = file.name.split('.').pop().toLowerCase()
-  if (ext === 'csv') {
-    return new Promise((res, rej) => {
-      const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsText(file)
-    })
-  }
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload = e => {
-      try { const wb = XLSX.read(e.target.result, { type:'array' }); res(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]])) }
-      catch(err) { rej(err) }
-    }
-    r.onerror = rej; r.readAsArrayBuffer(file)
-  })
-}
-
-async function productBibleToEtaCSV(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload = e => {
-      try {
-        const wb = XLSX.read(e.target.result, { type:'array' })
-        const sheetName = wb.SheetNames.find(n => n.toLowerCase().includes('stock eta')) || wb.SheetNames[0]
-        res(XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]))
-      } catch(err) { rej(err) }
-    }
-    r.onerror = rej; r.readAsArrayBuffer(file)
-  })
+async function uploadFile(key, file) {
+  const fd = new FormData()
+  fd.append(key, file)
+  const resp = await fetch('/api/upload', { method: 'POST', body: fd })
+  const data = await resp.json()
+  if (data.error) throw new Error(data.error)
+  return data[key] || ''
 }
 
 function parseEtaCSV(csv) {
@@ -267,13 +244,18 @@ export default function Dashboard() {
 
   const handleFile = async (key, file) => {
     setFN(prev => ({ ...prev, [key]: file.name }))
+    setError('')
     try {
+      const csv = await uploadFile(key, file)
       if (key === 'bible') {
-        const _eta = await productBibleToEtaCSV(file); setCsvData(prev => ({ ...prev, eta: _eta }))
+        setCsvData(prev => ({ ...prev, eta: csv }))
       } else {
-        const _csv = await fileToCSV(file); setCsvData(prev => ({ ...prev, [key]: _csv }))
+        setCsvData(prev => ({ ...prev, [key]: csv }))
       }
-    } catch(e) { setError(`Could not read ${file.name}`) }
+      console.log(`Loaded ${key}: ${csv.length} chars`)
+    } catch(e) {
+      setError(`Could not read ${file.name}: ${e.message}`)
+    }
   }
 
   // Build a readable context string for the chat
@@ -330,7 +312,11 @@ export default function Dashboard() {
         body: JSON.stringify({ looker:csvData.looker, sellerboard:csvData.sellerboard, stockEta:csvData.eta, manual }),
       })
       const data = await resp.json()
-      if (data.error) throw new Error(data.error)
+      if (data.error) throw new Error(data.error + (data.raw ? ' | Raw: ' + data.raw : ''))
+      if (!data.results || data.results.length === 0) {
+        setError('Analysis returned no results. Check that your files contain data and try again.')
+        setLoading(false); return
+      }
       setResults(data.results); buildSlack(data.results, eta)
     } catch(e) { setError('Analysis failed — ' + e.message) }
     setLoading(false)
