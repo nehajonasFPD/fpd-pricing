@@ -14,7 +14,11 @@ Best results come from using both Looker and Sellerboard. Product Bible is optio
 
 ## Open The App
 
-If APEX is already deployed, open the normal APEX web link.
+If APEX is already deployed, open:
+
+```text
+http://fpd-pricing-apex.167.233.109.59.sslip.io/dashboard
+```
 
 If someone is running it locally, ask them to start the app and give you a browser link. It usually looks like:
 
@@ -23,6 +27,8 @@ http://localhost:3000
 ```
 
 For Docker-based local setup, see `docs/LOCAL_DOCKER.md`.
+
+For production hosting details, see `docs/COOLIFY_DEPLOYMENT.md`.
 
 ## Dashboard Overview
 

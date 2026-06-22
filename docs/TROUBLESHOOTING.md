@@ -61,6 +61,7 @@ What to try:
 Possible causes:
 
 - The API key is missing or wrong.
+- The model name is not available to the configured Anthropic key.
 - The AI service is temporarily unavailable.
 - The uploaded export format changed.
 - The AI response was not readable as a recommendation table.
@@ -71,7 +72,8 @@ What to try:
 2. Refresh the page and upload the files again.
 3. Confirm the files have the expected columns.
 4. Ask the technical owner to check whether `APEX_API_KEY` is configured.
-5. Ask the technical owner to check the app logs.
+5. Ask the technical owner to check whether `APEX_MODEL` is `claude-sonnet-4-6`.
+6. Ask the technical owner to check the app logs.
 
 ## Problem: Results Look Incomplete
 
@@ -228,7 +230,10 @@ Confirm the environment contains:
 
 ```text
 APEX_API_KEY
+APEX_MODEL=claude-sonnet-4-6
 ```
+
+For Coolify, confirm `APEX_API_KEY` is runtime-only and not build-time.
 
 Check these app areas if issues continue:
 
@@ -241,3 +246,4 @@ Check these app areas if issues continue:
 
 Security reminder: do not print, screenshot, commit, or paste the real API key into tickets or Slack.
 
+For production deployment details and smoke test data, see `docs/COOLIFY_DEPLOYMENT.md`.

@@ -21,6 +21,7 @@ Open `.env.local` and replace the placeholder with the real key:
 
 ```text
 APEX_API_KEY=your_real_key_here
+APEX_MODEL=claude-sonnet-4-6
 ```
 
 Do not share this file or commit it to Git.
@@ -71,6 +72,7 @@ If analysis fails:
 
 - Check `.env.local` exists.
 - Check `APEX_API_KEY` is filled in.
+- Check `APEX_MODEL` is `claude-sonnet-4-6`.
 - Restart with `docker compose --env-file .env.local up --build`.
 
 If port 3000 is already busy:
@@ -92,4 +94,3 @@ Then open:
 ```text
 http://localhost:3001
 ```
-

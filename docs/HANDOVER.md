@@ -86,11 +86,19 @@ APEX needs an Anthropic API key stored as:
 APEX_API_KEY
 ```
 
+The deployed Coolify app also uses:
+
+```text
+APEX_MODEL=claude-sonnet-4-6
+```
+
 For local use, this normally lives in `.env.local`.
 
 For production, it should be stored in the hosting provider's secret manager.
 
 Do not paste the real key into documents, Slack, commits, screenshots, or support tickets.
+
+Current production deployment details are in `docs/COOLIFY_DEPLOYMENT.md`.
 
 ## Files Worth Knowing About
 
@@ -152,4 +160,3 @@ Technical owner:
 - Keeps the API key working.
 - Fixes upload, build, deployment, or AI response issues.
 - Updates this documentation when the workflow changes.
-
