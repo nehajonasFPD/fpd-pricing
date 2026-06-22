@@ -28,7 +28,7 @@ Guidelines:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: process.env.APEX_MODEL || 'claude-sonnet-4-6',
         max_tokens: 500,
         system,
         messages,
@@ -36,6 +36,12 @@ Guidelines:
     })
 
     const data = await response.json()
+    if (!response.ok) {
+      const message = data.error?.message || 'Anthropic request failed'
+      console.error('Anthropic chat error:', response.status, data.error?.type || message)
+      return NextResponse.json({ error: 'Chat failed: ' + message }, { status: 502 })
+    }
+
     const text = data.content?.find(b => b.type === 'text')?.text || 'Sorry, I could not generate a response.'
     return NextResponse.json({ reply: text })
   } catch (err) {

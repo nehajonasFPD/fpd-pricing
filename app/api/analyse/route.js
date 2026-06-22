@@ -45,13 +45,19 @@ Schema: [{"sku":"","asin":"","product_line":"","action":"RAISE|DROP|DEAL|HOLD|AL
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: process.env.APEX_MODEL || 'claude-sonnet-4-6',
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
     })
 
     const data = await response.json()
+    if (!response.ok) {
+      const message = data.error?.message || 'Anthropic request failed'
+      console.error('Anthropic error:', response.status, data.error?.type || message)
+      return NextResponse.json({ error: message }, { status: 502 })
+    }
+
     const raw = data.content?.find(b => b.type === 'text')?.text || '[]'
     console.log('Claude raw (first 500):', raw.substring(0, 500))
 
