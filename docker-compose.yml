@@ -1,0 +1,8 @@
+services:
+  apex:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      APEX_API_KEY: ${APEX_API_KEY:-}
