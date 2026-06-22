@@ -6,3 +6,7 @@ services:
     environment:
       NODE_ENV: production
       APEX_API_KEY: ${APEX_API_KEY:-}
+      APEX_MODEL: ${APEX_MODEL:-claude-sonnet-4-6}
+      APEX_PASSWORD: ${APEX_PASSWORD:-}
+      APEX_SESSION_SECRET: ${APEX_SESSION_SECRET:-}
+      APEX_COOKIE_SECURE: ${APEX_COOKIE_SECURE:-false}

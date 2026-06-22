@@ -6,8 +6,9 @@ This guide is for running APEX on your own computer without installing the app d
 
 - Docker Desktop installed and running.
 - An Anthropic API key if you want analysis and chat to work.
+- A shared dashboard password.
 
-The dashboard can open without the API key, but `Analyse & recommend` and the chat assistant need it.
+The dashboard requires the shared password. `Analyse & recommend` and the chat assistant also need the API key.
 
 ## First-Time Setup
 
@@ -22,6 +23,15 @@ Open `.env.local` and replace the placeholder with the real key:
 ```text
 APEX_API_KEY=your_real_key_here
 APEX_MODEL=claude-sonnet-4-6
+APEX_PASSWORD=choose_a_shared_password
+APEX_SESSION_SECRET=use_a_long_random_value_here
+APEX_COOKIE_SECURE=false
+```
+
+You can generate a local session secret with:
+
+```text
+openssl rand -hex 32
 ```
 
 Do not share this file or commit it to Git.
@@ -55,10 +65,10 @@ docker compose down
 If you only want to view the interface:
 
 ```text
-docker compose up --build
+APEX_PASSWORD=demo APEX_SESSION_SECRET=demo-session-secret docker compose up --build
 ```
 
-The dashboard will load, but analysis and chat will fail until `APEX_API_KEY` is provided.
+The dashboard will open after logging in with `demo`, but analysis and chat will fail until `APEX_API_KEY` is provided.
 
 ## Common Issues
 
@@ -72,6 +82,7 @@ If analysis fails:
 
 - Check `.env.local` exists.
 - Check `APEX_API_KEY` is filled in.
+- Check `APEX_PASSWORD` and `APEX_SESSION_SECRET` are filled in.
 - Check `APEX_MODEL` is `claude-sonnet-4-6`.
 - Restart with `docker compose --env-file .env.local up --build`.
 

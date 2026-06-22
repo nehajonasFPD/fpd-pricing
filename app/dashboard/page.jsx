@@ -242,6 +242,12 @@ export default function Dashboard() {
   const [copied, setCopied]     = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
 
+  const logout = async () => {
+    await fetch('/api/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
+
   const handleFile = async (key, file) => {
     setFN(prev => ({ ...prev, [key]: file.name }))
     setError('')
@@ -379,7 +385,10 @@ export default function Dashboard() {
           <span style={{ color:BORDER }}>|</span>
           <span style={{ fontSize:13, color:DIM }}>Amazon UK Repricing Brief</span>
         </div>
-        <div style={{ fontSize:12, color:DIM, background:CARD, padding:'4px 12px', borderRadius:6, border:`1px solid ${BORDER}` }}>{TODAY}</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ fontSize:12, color:DIM, background:CARD, padding:'4px 12px', borderRadius:6, border:`1px solid ${BORDER}` }}>{TODAY}</div>
+          <button onClick={logout} style={{ fontSize:12, color:DIM, background:'transparent', padding:'4px 10px', borderRadius:6, border:`1px solid ${BORDER}`, cursor:'pointer' }}>Logout</button>
+        </div>
       </nav>
 
       <div style={{ maxWidth:980, margin:'0 auto', padding:'2rem 1rem' }}>

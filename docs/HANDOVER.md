@@ -90,13 +90,16 @@ The deployed Coolify app also uses:
 
 ```text
 APEX_MODEL=claude-sonnet-4-6
+APEX_PASSWORD
+APEX_SESSION_SECRET
+APEX_COOKIE_SECURE=false
 ```
 
 For local use, this normally lives in `.env.local`.
 
 For production, it should be stored in the hosting provider's secret manager.
 
-Do not paste the real key into documents, Slack, commits, screenshots, or support tickets.
+Do not paste the real key, shared password, or session secret into documents, Slack, commits, screenshots, or support tickets.
 
 Current production deployment details are in `docs/COOLIFY_DEPLOYMENT.md`.
 
@@ -109,6 +112,9 @@ Current production deployment details are in `docs/COOLIFY_DEPLOYMENT.md`.
 | `app/api/upload/route.js` | Reads CSV, XLS, and XLSX files |
 | `app/api/analyse/route.js` | Sends pricing data to the Anthropic API for recommendations |
 | `app/api/chat/route.js` | Sends dashboard context to the APEX chat assistant |
+| `app/login/page.jsx` | Shared password login screen |
+| `middleware.js` | Redirects unauthenticated dashboard users to login |
+| `lib/auth.mjs` | Signs and verifies the auth session cookie |
 | `app/layout.js` | Page title and global page styling |
 | `package.json` | App scripts and dependencies |
 

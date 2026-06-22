@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
+import { isAuthenticatedRequest } from '../../../lib/auth.mjs'
 
 export async function POST(request) {
   try {
+    if (!(await isAuthenticatedRequest(request))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { messages, context } = await request.json()
 
     const system = `You are APEX, an AI pricing analyst for First Point Distribution (FPD), an Amazon UK e-commerce seller.

@@ -20,6 +20,8 @@ If APEX is already deployed, open:
 http://fpd-pricing-apex.167.233.109.59.sslip.io/dashboard
 ```
 
+If the login screen appears, enter the shared APEX password from the technical owner.
+
 If someone is running it locally, ask them to start the app and give you a browser link. It usually looks like:
 
 ```text
@@ -185,4 +187,11 @@ Check it can build:
 npm run build
 ```
 
-The app also needs `APEX_API_KEY` set in the environment before analysis or chat will work.
+The app also needs these environment variables before the protected dashboard, analysis, and chat will work:
+
+```text
+APEX_API_KEY
+APEX_PASSWORD
+APEX_SESSION_SECRET
+APEX_COOKIE_SECURE
+```

@@ -29,6 +29,9 @@ Coolify must have these variables:
 | --- | --- |
 | `APEX_API_KEY` | Anthropic API key for analysis and chat |
 | `APEX_MODEL` | Anthropic model override; use `claude-sonnet-4-6` |
+| `APEX_PASSWORD` | Shared password for dashboard access |
+| `APEX_SESSION_SECRET` | Long random string used to sign login cookies |
+| `APEX_COOKIE_SECURE` | Set to `true` only when the app is served over HTTPS |
 | `NODE_ENV` | Production runtime setting |
 | `NEXT_TELEMETRY_DISABLED` | Disables Next.js telemetry |
 
@@ -36,6 +39,9 @@ Security rules:
 
 - Store `APEX_API_KEY` only in Coolify environment variables.
 - Keep `APEX_API_KEY` runtime-only, not build-time.
+- Store `APEX_PASSWORD` and `APEX_SESSION_SECRET` only in Coolify environment variables.
+- Use a long random value for `APEX_SESSION_SECRET`, for example output from `openssl rand -hex 32`.
+- Keep `APEX_COOKIE_SECURE=false` while using the current `http://` URL. Change it to `true` after moving the app to HTTPS.
 - Do not paste the real key into Git, docs, Slack, screenshots, or support tickets.
 - It is safe for `APEX_MODEL` to be visible because it is not a secret.
 
@@ -46,7 +52,7 @@ The deployment was verified after adding the Anthropic key and updating the mode
 Verified checks:
 
 - `/` returned `200 OK`.
-- `/dashboard` returned `200 OK`.
+- `/dashboard` redirects unauthenticated users to `/login`.
 - `/api/analyse` returned synthetic recommendations for `TEST-RAISE`, `TEST-DROP`, and `TEST-ALERT`.
 - `/api/chat` returned a valid assistant response.
 - `APEX_API_KEY` existed in Coolify with `is_buildtime: false`.
@@ -66,7 +72,8 @@ docker compose build
 3. Commit and push to `main`.
 4. In Coolify, redeploy `fpd-pricing-apex`.
 5. Check the public URL and dashboard URL.
-6. Run a small analysis smoke test before telling operators the app is ready.
+6. Log in with the shared dashboard password.
+7. Run a small analysis smoke test before telling operators the app is ready.
 
 Coolify can also redeploy automatically if auto-deploy is enabled for the app.
 
@@ -103,4 +110,3 @@ Expected result:
 - The app still uses `next@14.2.3`, which shows a security warning during builds. Upgrade Next.js before broader production exposure.
 - The current app sends only the first 100 rows from each uploaded Looker and Sellerboard file to the model.
 - This deployment uses the sslip.io URL. Add a real domain later if the app becomes a regular team tool.
-
