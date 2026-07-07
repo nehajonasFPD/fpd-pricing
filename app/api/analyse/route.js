@@ -74,7 +74,7 @@ export async function POST(request) {
       }
     }).filter(r => (r.total_sales || 0) > 0 || (r.current_stock || 0) > 0)
 
-    const top40 = merged.sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 40)
+    const top40 = merged.sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 25)
     console.log(`Sending ${top40.length} SKUs to Claude`)
 
     const skuList = top40.map(r =>
@@ -108,7 +108,7 @@ Schema: [{"sku":"","asin":"","product_line":"","action":"RAISE|DROP|DEAL|HOLD|AL
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }],
       }),
     })
