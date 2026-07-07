@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 
-// Parse CSV — auto-detects comma or semicolon delimiter, handles BOM and spaced numbers
 function parseCSV(csv) {
   if (!csv || !csv.trim()) return []
   const clean = csv.replace(/^\uFEFF/, '').trim()
@@ -27,7 +26,6 @@ function parseCSV(csv) {
   })
 }
 
-// Convert to number — handles spaces as thousand separators e.g. "3 125.16"
 function toNum(v) {
   if (v === undefined || v === null || v === '') return null
   const n = Number(String(v).replace(/[£,%]/g, '').replace(/\s/g, '').trim())
@@ -37,21 +35,17 @@ function toNum(v) {
 export async function POST(request) {
   try {
     const { looker, sellerboard, manual } = await request.json()
-
     if (!looker && !sellerboard) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 })
     }
 
     const lsRows = parseCSV(looker)
     const sbRows = parseCSV(sellerboard)
-    console.log(`Parsed: ${lsRows.length} Looker rows, ${sbRows.length} Sellerboard rows`)
-    if (sbRows.length > 0) console.log('SB sample keys:', Object.keys(sbRows[0]).slice(0, 8).join(', '))
+    console.log(`Parsed: ${lsRows.length} Looker, ${sbRows.length} Sellerboard rows`)
 
-    // Index Sellerboard by ASIN
     const sbByAsin = {}
     sbRows.forEach(r => { if (r.ASIN) sbByAsin[r.ASIN.trim()] = r })
 
-    // Merge on ASIN
     const merged = lsRows.map(ls => {
       const asin = (ls.ASIN || '').trim()
       const sb = sbByAsin[asin] || {}
@@ -74,30 +68,28 @@ export async function POST(request) {
       }
     }).filter(r => (r.total_sales || 0) > 0 || (r.current_stock || 0) > 0)
 
-    const top40 = merged.sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 25)
-    console.log(`Sending ${top40.length} SKUs to Claude`)
+    const top25 = merged.sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 25)
+    console.log(`Scoring ${top25.length} SKUs`)
 
-    const skuList = top40.map(r =>
-      `${r.sku}|${r.product_line}|${r.asin}|sales:${r.total_sales?.toFixed(0)}|gm:${r.gm_pct?.toFixed(3)}|tacos:${r.tacos?.toFixed(3)}|dos:${r.dos?.toFixed(0)}|stock:${r.current_stock}|np:${r.net_profit?.toFixed(0)}|margin:${r.margin?.toFixed(1)}|bsr:${r.bsr}|acos:${r.real_acos?.toFixed(1)}|sessions:${r.sessions}|price:${r.avg_price?.toFixed(2)}`
+    // Compact pipe-separated list — only what Claude needs to score
+    const skuList = top25.map(r =>
+      `${r.sku}|dos:${r.dos?.toFixed(0)??'null'}|np:${r.net_profit?.toFixed(0)??'null'}|margin:${r.margin?.toFixed(1)??'null'}|acos:${r.real_acos?.toFixed(1)??'null'}|sessions:${r.sessions??'null'}`
     ).join('\n')
 
-    const prompt = `You are a pricing analyst for First Point Distribution (FPD), Amazon UK seller.
-
-Score each SKU using these rules (priority order):
-1. ALERT  — dos < 15 (stock emergency)
-2. RAISE  — net_profit > 0 AND margin > 22 AND acos < 9 AND dos >= 25
-3. DROP   — net_profit < 0 OR (margin < 8 AND dos >= 45)
+    // Ask Claude ONLY for sku + action + reasoning — everything else comes from our data
+    const prompt = `Score each SKU for Amazon UK pricing. Rules (priority order):
+1. ALERT  — dos < 15
+2. RAISE  — np > 0 AND margin > 22 AND acos < 9 AND dos >= 25
+3. DROP   — np < 0 OR (margin < 8 AND dos >= 45)
 4. DEAL   — (acos > 14 AND sessions > 500) OR (dos >= 60 AND margin < 18)
 5. HOLD   — everything else
+margin and acos are in %. np = net profit.
+${manual ? `Note: ${manual}` : ''}
 
-gm is decimal (0.35=35%). tacos is decimal (0.07=7%). margin and acos are already in %.
-${manual ? `Extra context: ${manual}` : ''}
-
-sku|product_line|asin|sales|gm|tacos|dos|stock|net_profit|margin|bsr|real_acos|sessions|avg_price
 ${skuList}
 
-Respond ONLY with a JSON array. No markdown, no backticks, no explanation.
-Schema: [{"sku":"","asin":"","product_line":"","action":"RAISE|DROP|DEAL|HOLD|ALERT","bsr":null,"margin_pct":null,"real_acos_pct":null,"dos":null,"net_profit":null,"avg_price":null,"units":null,"current_stock":null,"reasoning":"max 8 words"}]`
+Reply ONLY with a JSON array, no markdown:
+[{"sku":"exact sku name","action":"RAISE|DROP|DEAL|HOLD|ALERT","reasoning":"max 6 words"}]`
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -108,27 +100,51 @@ Schema: [{"sku":"","asin":"","product_line":"","action":"RAISE|DROP|DEAL|HOLD|AL
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
       }),
     })
 
     const data = await response.json()
-    console.log('Anthropic status:', data.type, '| stop_reason:', data.stop_reason)
+    console.log('stop_reason:', data.stop_reason, '| type:', data.type)
     const raw = data.content?.find(b => b.type === 'text')?.text || '[]'
-    console.log('Raw (first 300):', raw.substring(0, 300))
+    console.log('Raw (first 200):', raw.substring(0, 200))
 
     const jsonMatch = raw.match(/\[[\s\S]*\]/)
     const jsonStr = jsonMatch ? jsonMatch[0] : raw.replace(/```json|```/g, '').trim()
 
-    let results = []
+    let scored = []
     try {
-      results = JSON.parse(jsonStr)
+      scored = JSON.parse(jsonStr)
     } catch(e) {
-      console.error('Parse error:', e.message)
-      return NextResponse.json({ error: 'Parse failed', raw: raw.substring(0, 300) }, { status: 500 })
+      console.error('Parse error:', e.message, '| raw:', raw.substring(0, 200))
+      return NextResponse.json({ error: 'Parse failed: ' + e.message, raw: raw.substring(0, 200) }, { status: 500 })
     }
 
+    // Enrich Claude's minimal response with our full data
+    const skuMap = {}
+    top25.forEach(r => { skuMap[r.sku] = r })
+
+    const results = scored.map(s => {
+      const d = skuMap[s.sku] || {}
+      return {
+        sku:           s.sku,
+        asin:          d.asin || '',
+        product_line:  d.product_line || '',
+        action:        s.action,
+        reasoning:     s.reasoning,
+        bsr:           d.bsr,
+        margin_pct:    d.margin,
+        real_acos_pct: d.real_acos,
+        dos:           d.dos,
+        net_profit:    d.net_profit,
+        avg_price:     d.avg_price,
+        units:         d.units,
+        current_stock: d.current_stock,
+      }
+    })
+
+    console.log(`Returning ${results.length} results`)
     return NextResponse.json({ results })
   } catch (err) {
     console.error('Route error:', err.message)
