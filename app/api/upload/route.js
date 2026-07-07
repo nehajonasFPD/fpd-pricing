@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
-import { isAuthenticatedRequest } from '../../../lib/auth.mjs'
 
 export async function POST(request) {
   try {
-    if (!(await isAuthenticatedRequest(request))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const result = {}
 

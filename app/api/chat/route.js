@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server'
-import { isAuthenticatedRequest } from '../../../lib/auth.mjs'
 
 export async function POST(request) {
   try {
-    if (!(await isAuthenticatedRequest(request))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { messages, context } = await request.json()
 
     const system = `You are APEX, an AI pricing analyst for First Point Distribution (FPD), an Amazon UK e-commerce seller.
@@ -33,7 +28,7 @@ Guidelines:
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: process.env.APEX_MODEL || 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
         system,
         messages,
@@ -41,12 +36,6 @@ Guidelines:
     })
 
     const data = await response.json()
-    if (!response.ok) {
-      const message = data.error?.message || 'Anthropic request failed'
-      console.error('Anthropic chat error:', response.status, data.error?.type || message)
-      return NextResponse.json({ error: 'Chat failed: ' + message }, { status: 502 })
-    }
-
     const text = data.content?.find(b => b.type === 'text')?.text || 'Sorry, I could not generate a response.'
     return NextResponse.json({ reply: text })
   } catch (err) {
